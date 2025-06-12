@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Home</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width" />
+  <!-- เลือกได้ทางใดทางหนึ่ง ระหว่างบน Tag head + Attribute defer -->
+  <script defer src="script/script.js"></script>
+</head>
+
+<body>
+  <p>
+    Is JavaScript Work?:
+    <span id="output" style="color: red">❌ No</span>
+  </p>
+  <script>
+    // "\n" คือการแสดงเว้นบรรทัด
+    const article1 = 'Hello world!\n\nThis is next 2 lines'
+    const article2 = `Hello world!
+
+This is next 2 lines` // ใช้ Backtick สามารถแสดงเว้นบรรทัดได้เลย
+
+    console.log(article1)
+    console.log(article2)
+  </script>
+  <!-- หรือล่างสุดของ Tag Body -->
+  <!-- <script src="script/script.js"></script> -->
+</body>
+
+</html>
