@@ -1,5 +1,6 @@
-console.log("Hello, TypeScript By Nathan!");
+import { users, addUser, getUserById } from './users'
 
-function sum(a: number, b: number, c: number): number {
-    return a + b + c
-}
+addUser({ name: 'Nathan', email: 'nathanbc46@gmail.com' })
+addUser({ name: 'Jim', email: 'Jim@aa.com' })
+console.log(users);
+console.log(getUserById(1)); // Output: { id: 1, name: 'Nathan', email: '
