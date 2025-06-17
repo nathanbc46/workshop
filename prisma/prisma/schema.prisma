@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// Reference: https://www.prisma.io/docs/orm/reference/prisma-schema-reference
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Model: https://www.prisma.io/docs/orm/reference/prisma-schema-reference#model-fields
+// Field type scalar types: https://www.prisma.io/docs/orm/reference/prisma-schema-reference#model-field-scalar-types
+// Field type modifiers: https://www.prisma.io/docs/orm/reference/prisma-schema-reference#model-field-type-modifiers
+// Attributes: https://www.prisma.io/docs/orm/reference/prisma-schema-reference#attributes
+// Attribute functions: https://www.prisma.io/docs/orm/reference/prisma-schema-reference#attribute-functions
+
+model User {
+  // Field name    Field type    Attributes
+  id        Int      @id @default(autoincrement()) //@id marks this field as the primary key
+  updatedAt DateTime @updatedAt // @updatedAt automatically updates this field to the current timestamp whenever the record is updated
+  createdAt DateTime @default(now()) //@default กำหนดค่าเริ่มต้นให้กับฟิลด์นี้เป็นเวลาปัจจุบัน
+  email     String   @unique
+  name      String? // Optional field, can be null
+  role      Role     @default(USER) //Role เป็น Enum จะประกอบด้วยค่าที่กำหนดไว้ล่วงหน้า เช่น USER และ ADMIN
+  posts     Post[] //บอกว่า User มีความสัมพันธ์แบบ one-to-many กับ Post (มีหลายโพสต์ที่ผู้ใช้สามารถเขียนได้)
+  profile   Profile? //บอกว่า User มีความสัมพันธ์แบบ one-to-one กับ Profile (ผู้ใช้มีโปรไฟล์เดียว)
+
+  successorId Int? @unique
+  successor   User? @relation("BlogOwnerHistory", fields: [successorId], references: [id]) //ความสัมพันธ์แบบ one-to-one กับ User (ผู้ใช้สามารถมีผู้สืบทอดได้)
+  predecessor User? @relation("BlogOwnerHistory" )
+}
+
+model Profile {
+  id        Int      @id @default(autoincrement())
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  bio       String?  @db.Text // Using db.Text for potentially long bio
+  firstName String
+  lastName  String
+  user      User     @relation(fields: [userId], references: [id]) //@relation คือการสร้างความสัมพันธ์ระหว่างโมเดล Profile และ User
+  userId    Int      @unique // @unique กำหนดให้ userId เป็นฟิลด์ที่ไม่ซ้ำกันในตาราง Profile
+
+  @@unique([firstName, lastName]) //สร้างดัชนีที่ไม่ซ้ำกันสำหรับ firstName และ lastName
+  @@index([bio]) //สร้างดัชนีสำหรับฟิลด์ bio เพื่อเพิ่มประสิทธิภาพในการค้นหา
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  published Boolean  @default(false) //กำหนดค่าเริ่มต้นให้กับฟิลด์นี้เป็น false
+  title     String   @db.VarChar(255) // Using db.VarChar to limit the length of the title
+  content   String?  @db.Text // Using db.Text for potentially long content
+  author    User?    @relation(fields: [authorId], references: [id]) //@relation คือการสร้างความสัมพันธ์ระหว่างโมเดล Post และ User
+  authorId  Int?
+  categories Category[] //บอกว่า Post มีความสัมพันธ์แบบ many-to-many กับ Category (โพสต์สามารถอยู่ในหลายหมวดหมู่ได้)
+
+  @@index([title]) //สร้างดัชนีสำหรับฟิลด์ title เพื่อเพิ่มประสิทธิภาพในการค้นหา
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique //กำหนดให้ชื่อหมวดหมู่ไม่ซ้ำกัน
+  posts     Post[] 
+
+  @@index([name]) //สร้างดัชนีสำหรับฟิลด์ name เพื่อเพิ่มประสิทธิภาพในการค้นหา
+}
+
+/////// Explicit Many-to-Many กำหนดและสร้างตารางเพื่อกำหนด Relation เอง///////
+/* model Post {
+  id         Int                 @id @default(autoincrement())
+  title      String
+  categories CategoriesOnPosts[]
+}
+
+model Category {
+  id    Int                 @id @default(autoincrement())
+  name  String
+  posts CategoriesOnPosts[]
+}
+
+model CategoriesOnPosts {
+  post       Post     @relation(fields: [postId], references: [id])
+  postId     Int // relation scalar field (used in the `@relation` attribute above)
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId Int // relation scalar field (used in the `@relation` attribute above)
+  assignedAt DateTime @default(now())
+  assignedBy String
+
+  @@id([postId, categoryId])
+} */
+
+// Enum: https://www.prisma.io/docs/orm/reference/prisma-schema-reference#enum
+enum Role {
+  USER
+  ADMIN
+}
+
+// Type (MongoDB only): https://www.prisma.io/docs/orm/reference/prisma-schema-reference#type
