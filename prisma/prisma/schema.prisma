@@ -4,7 +4,6 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
-// Reference: https://www.prisma.io/docs/orm/reference/prisma-schema-reference
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -23,58 +22,64 @@ datasource db {
 
 model User {
   // Field name    Field type    Attributes
-  id        Int      @id @default(autoincrement()) //@id marks this field as the primary key
-  updatedAt DateTime @updatedAt // @updatedAt automatically updates this field to the current timestamp whenever the record is updated
-  createdAt DateTime @default(now()) //@default กำหนดค่าเริ่มต้นให้กับฟิลด์นี้เป็นเวลาปัจจุบัน
-  email     String   @unique
-  name      String? // Optional field, can be null
-  role      Role     @default(USER) //Role เป็น Enum จะประกอบด้วยค่าที่กำหนดไว้ล่วงหน้า เช่น USER และ ADMIN
-  posts     Post[] //บอกว่า User มีความสัมพันธ์แบบ one-to-many กับ Post (มีหลายโพสต์ที่ผู้ใช้สามารถเขียนได้)
-  profile   Profile? //บอกว่า User มีความสัมพันธ์แบบ one-to-one กับ Profile (ผู้ใช้มีโปรไฟล์เดียว)
+  id        Int      @id @default(autoincrement()) //@id คือ primary key
+  createdAt DateTime @default(now()) //@default(now()) คือ ค่าที่จะถูกกำหนดเมื่อมีการสร้าง record ใหม่
+  email     String   @unique // @unique คือ ค่าที่จะต้องไม่ซ้ำกันในฐานข้อมูล
+  name      String? // ชื่อผู้ใช้สามารถเป็น null ได้
+  role      Role     @default(USER) //role เป็น enum ที่กำหนดไว้ข้างล่าง สามารถเป็น USER หรือ ADMIN
+  updatedAt DateTime @updatedAt // @updatedAt คือ ค่าที่จะถูกอัพเดตเมื่อมีการแก้ไข record
 
-  successorId Int? @unique
-  successor   User? @relation("BlogOwnerHistory", fields: [successorId], references: [id]) //ความสัมพันธ์แบบ one-to-one กับ User (ผู้ใช้สามารถมีผู้สืบทอดได้)
-  predecessor User? @relation("BlogOwnerHistory" )
+  successorId Int? @unique// ฟิลด์นี้ใช้สำหรับการเชื่อมโยงกับผู้ใช้คนอื่น ๆ (เช่น ผู้ใช้ที่เป็นผู้สืบทอด)
+  successor   User? @relation("UserSuccessor", fields: [successorId], references: [id]) // ความสัมพันธ์แบบ one-to-one กับโมเดล User
+  predecessor User? @relation("UserSuccessor") // ความสัมพันธ์แบบ one-to-one กับโมเดล User
+  // ความสัมพันธ์กับโมเดลอื่น ๆ
+  posts     Post[] //ความสัมพันธ์แบบ one-to-many กับโมเดล Post
+  profile   Profile? //ความสัมพันธ์แบบ one-to-one กับโมเดล Profile
 }
 
 model Profile {
   id        Int      @id @default(autoincrement())
-  updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
-  bio       String?  @db.Text // Using db.Text for potentially long bio
-  firstName String
-  lastName  String
-  user      User     @relation(fields: [userId], references: [id]) //@relation คือการสร้างความสัมพันธ์ระหว่างโมเดล Profile และ User
-  userId    Int      @unique // @unique กำหนดให้ userId เป็นฟิลด์ที่ไม่ซ้ำกันในตาราง Profile
+  updatedAt DateTime @updatedAt // @updatedAt คือ ค่าที่จะถูกอัพเดตเมื่อมีการแก้ไข record
+  bio       String?  @db.Text // @db.Text คือการกำหนดให้ฟิลด์ bio เป็นข้อความที่ยาวได้
+  firstName String?  @db.VarChar(100) // @db.VarChar(100) คือการกำหนดความยาวสูงสุดของฟิลด์ firstName เป็น 100 ตัวอักษร
+  lastName  String?  @db.VarChar(100) // @db.VarChar(100) คือการกำหนดความยาวสูงสุดของฟิลด์ lastName เป็น 100 ตัวอักษร
+  age       Int? // อายุของผู้ใช้ สามารถเป็น null ได้
+  // ความสัมพันธ์กับโมเดลอื่น ๆ
+  user      User     @relation(fields: [userId], references: [id]) // ความสัมพันธ์แบบ one-to-one กับโมเดล User
+  userId    Int      @unique
 
-  @@unique([firstName, lastName]) //สร้างดัชนีที่ไม่ซ้ำกันสำหรับ firstName และ lastName
-  @@index([bio]) //สร้างดัชนีสำหรับฟิลด์ bio เพื่อเพิ่มประสิทธิภาพในการค้นหา
+  @@unique([firstName, lastName]) // สร้างดัชนีที่ไม่ซ้ำกันสำหรับ firstName และ lastName
 }
 
 model Post {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  published Boolean  @default(false) //กำหนดค่าเริ่มต้นให้กับฟิลด์นี้เป็น false
-  title     String   @db.VarChar(255) // Using db.VarChar to limit the length of the title
-  content   String?  @db.Text // Using db.Text for potentially long content
-  author    User?    @relation(fields: [authorId], references: [id]) //@relation คือการสร้างความสัมพันธ์ระหว่างโมเดล Post และ User
-  authorId  Int?
-  categories Category[] //บอกว่า Post มีความสัมพันธ์แบบ many-to-many กับ Category (โพสต์สามารถอยู่ในหลายหมวดหมู่ได้)
+  updatedAt DateTime @updatedAt // @updatedAt คือ ค่าที่จะถูกอัพเดตเมื่อมีการแก้ไข record
+  published Boolean  @default(false) // @default(false) คือ ค่าที่จะถูกกำหนดเมื่อมีการสร้าง record ใหม่
+  title     String   @db.VarChar(255) // @db.VarChar(255) คือการกำหนดความยาวสูงสุดของฟิลด์ title เป็น 255 ตัวอักษร
+  content   String?  @db.Text // @db.Text คือการกำหนดให้ฟิลด์ content เป็นข้อความที่ยาวได้
 
-  @@index([title]) //สร้างดัชนีสำหรับฟิลด์ title เพื่อเพิ่มประสิทธิภาพในการค้นหา
+  author   User? @relation(fields: [authorId], references: [id]) // ความสัมพันธ์แบบ many-to-one กับโมเดล User
+  authorId Int?
+  category Cagegory[] // ความสัมพันธ์แบบ many-to-many กับโมเดล Cagegory
+
+  @@index([title]) // สร้างดัชนีสำหรับฟิลด์ title เพื่อเพิ่มประสิทธิภาพการค้นหา
 }
 
-model Category {
+model Cagegory {
   id        Int      @id @default(autoincrement())
-  name      String   @unique //กำหนดให้ชื่อหมวดหมู่ไม่ซ้ำกัน
-  posts     Post[] 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // @updatedAt คือ ค่าที่จะถูกอัพเดตเมื่อมีการแก้ไข record
+  name      String   @db.VarChar(100) // @db.VarChar(100) คือการกำหนดความยาวสูงสุดของฟิลด์ name เป็น 100 ตัวอักษร
 
-  @@index([name]) //สร้างดัชนีสำหรับฟิลด์ name เพื่อเพิ่มประสิทธิภาพในการค้นหา
+  posts     Post[] // ความสัมพันธ์แบบ many-to-many กับโมเดล Post
+  @@index([name]) // สร้างดัชนีสำหรับฟิลด์ name เพื่อเพิ่มประสิทธิภาพการค้นหา
 }
 
-/////// Explicit Many-to-Many กำหนดและสร้างตารางเพื่อกำหนด Relation เอง///////
-/* model Post {
+/////// Explicit กำหนดและสร้างตารางเพื่อกำหนด Relation เอง ///////
+/* 
+model Post {
   id         Int                 @id @default(autoincrement())
   title      String
   categories CategoriesOnPosts[]
